@@ -200,32 +200,72 @@ namespace DungeonGenerator {
         std::string roomSVG;
         int tileX = 50 * (room->relPos->first - xOffset);
         int tileY = 50 * (room->relPos->second - yOffset);
-        for (const direction exit: *room->exitDirections) {
-            switch (exit) {
-                case north:
-                    roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
-                    roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
-                    break;
-                case east:
-                    roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
-                    roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
-                    break;
-                case south:
-                    roomSVG.append(SVGLine(tileX + 20, tileY + 0, tileX + 20, tileY + roomY) + "\n");
-                    roomSVG.append(SVGLine(tileX + 30, tileY + 0, tileX + 30, tileY + roomY) + "\n");
-                    break;
-                case west:
-                    roomSVG.append(SVGLine(tileX + 0, tileY + 20, tileX + roomX, tileY + 20) + "\n");
-                    roomSVG.append(SVGLine(tileX + 0, tileY + 30, tileX + roomX, tileY + 30) + "\n");
-                    break;
-            }
+        std::vector<direction>* exits = room->exitDirections;
+        // for (const direction exit: *room->exitDirections) {
+        //     switch (exit) {
+        //         case north:
+        //             roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
+        //             roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
+        //             break;
+        //         case east:
+        //             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
+        //             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
+        //             break;
+        //         case south:
+        //             roomSVG.append(SVGLine(tileX + 20, tileY + 0, tileX + 20, tileY + roomY) + "\n");
+        //             roomSVG.append(SVGLine(tileX + 30, tileY + 0, tileX + 30, tileY + roomY) + "\n");
+        //             break;
+        //         case west:
+        //             roomSVG.append(SVGLine(tileX + 0, tileY + 20, tileX + roomX, tileY + 20) + "\n");
+        //             roomSVG.append(SVGLine(tileX + 0, tileY + 30, tileX + roomX, tileY + 30) + "\n");
+        //             break;
+        //     }
+        // }
+        if (find(exits->begin(), exits->end(), north) != exits->end()) {
+            roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
+            roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + height, tileX + 20, tileY + roomY + height) + "\n");
+            roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + roomX + width, tileY + roomY + height) + "\n");
+        }
+        else {
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + height, tileX + roomX + width, tileY + roomY + height) + "\n");
         }
 
-        std::string rectSVG = std::regex_replace(SVG_RECT, std::regex("W"), std::to_string(width));
-        rectSVG = std::regex_replace(rectSVG,std::regex("H"), std::to_string(height));
-        rectSVG = std::regex_replace(rectSVG,std::regex("X"), std::to_string(roomX + tileX));
-        rectSVG = std::regex_replace(rectSVG,std::regex("Y"), std::to_string(roomY + tileY));
-        roomSVG.append(rectSVG + "\n");
+        if (find(exits->begin(), exits->end(), east) != exits->end()) {
+            roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX + width, tileY + roomY, tileX + roomX + width, tileY + 20) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + roomX + width, tileY + roomY + height) + "\n");
+        }
+        else {
+            roomSVG.append(SVGLine(tileX + roomX + width, tileY + roomY, tileX + roomX + width, tileY + roomY + height) + "\n");
+        }
+
+        if (find(exits->begin(), exits->end(), south) != exits->end()) {
+            roomSVG.append(SVGLine(tileX + 20, tileY, tileX + 20, tileY + roomY) + "\n");
+            roomSVG.append(SVGLine(tileX + 30, tileY, tileX + 30, tileY + roomY) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + 20, tileY + roomY) + "\n");
+            roomSVG.append(SVGLine(tileX + 30, tileY + roomY, tileX + roomX + width, tileY + roomY) + "\n");
+        }
+        else {
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX + width, tileY + roomY) + "\n");
+        }
+
+        if (find(exits->begin(), exits->end(), west) != exits->end()) {
+            roomSVG.append(SVGLine(tileX, tileY + 20, tileX + roomX, tileY + 20) + "\n");
+            roomSVG.append(SVGLine(tileX, tileY + 30, tileX + roomX, tileY + 30) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX, tileY + 20) + "\n");
+            roomSVG.append(SVGLine(tileX + roomX, tileY + 30, tileX + roomX, tileY + roomY + height) + "\n");
+        }
+        else {
+            roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX, tileY + roomY + height) + "\n");
+        }
+
+        // std::string rectSVG = std::regex_replace(SVG_RECT, std::regex("W"), std::to_string(width));
+        // rectSVG = std::regex_replace(rectSVG,std::regex("H"), std::to_string(height));
+        // rectSVG = std::regex_replace(rectSVG,std::regex("X"), std::to_string(roomX + tileX));
+        // rectSVG = std::regex_replace(rectSVG,std::regex("Y"), std::to_string(roomY + tileY));
+        // roomSVG.append(rectSVG + "\n");
 
         return roomSVG;
     }
