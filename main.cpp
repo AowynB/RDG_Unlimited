@@ -6,5 +6,5 @@
 
 int main()
 {
-    DungeonGenerator::Dungeon_Map dmap(14);
+    DungeonGenerator::Dungeon_Map dmap(6);
 }

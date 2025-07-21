@@ -12,9 +12,14 @@
 
 #define SVG_HEAD R"(<svg width="X" height="Y" xmlns="http://www.w3.org/2000/svg">)"
 #define SVG_LINE R"(<line x1="X1" y1="Y1" x2="X2" y2="Y2" style="stroke:white;stroke-width:2" />)"
+#define SVG_RECT R"(<rect width="W" height="H" x="X" y="Y" style="stroke:white;stroke-width:2"/>)"
 #define SVG_FOOT R"(</svg>)"
 
 using std::stack, std::string, std::ofstream;
+
+constexpr int CELL_SIZE = 50;
+constexpr int PASSAGE_SIZE = 10;
+const int ROOM_SIZES[5] = {10, 20, 30, 40, 50};
 
 namespace DungeonGenerator {
     Dungeon_Map::Dungeon_Map(int size)
@@ -23,20 +28,22 @@ namespace DungeonGenerator {
         passages = new vector<vector<Room*>*>;
         for (int i = 0; i < size; i++)
         {
-            rooms->emplace_back(new Room(false, i));
+            rooms->emplace_back(new Room(false, false, i));
             passages->emplace_back(new vector<Room*>());
         }
 
         width = floor(sqrt(size));
-        height = ceil(sqrt(size)) + 1;
+        height = static_cast<int>(ceil(sqrt(size)) + 1);
         RandomizedDFS();
-        generateSVG();
+        generateMazeSVG();
+        generateDungeonSVG();
     }
 
     void Dungeon_Map::RandomizedDFS() const
     {
         //initialize the random number generator
-        std::random_device random;
+        std::random_device rd;
+        std::mt19937 random(rd());
 
         //initialize the stack of rooms to be visited
         stack<Room*> toExplore;
@@ -63,7 +70,7 @@ namespace DungeonGenerator {
                 passages->at(curr->position)->emplace_back(next);
                 passages->at(next->position)->emplace_back(curr);
                 //push the next room
-                rooms->at(next->position)->visited = true;
+                next->visited = true;
                 toExplore.push(next);
             }
         }
@@ -103,9 +110,9 @@ namespace DungeonGenerator {
         return unvisitedNeighbors;
     }
 
-    void Dungeon_Map::generateSVG() const
+    void Dungeon_Map::generateMazeSVG() const
     {
-        ofstream mapFile = ofstream("Dungeon_Map.svg");
+        ofstream mapFile = ofstream("Dungeon_Maze.svg");
         string header = std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(width * 10));
         mapFile << std::regex_replace(header, std::regex("Y"), std::to_string(height * 10)) << std::endl;
 
@@ -163,11 +170,181 @@ namespace DungeonGenerator {
         mapFile << SVG_FOOT;
     }
 
-    std::string Dungeon_Map::SVGLine(int x1, int y1, int x2, int y2) const
+    std::string Dungeon_Map::SVGLine(const int x1, const int y1, const int x2, const int y2)
     {
         string lineSVG = std::regex_replace(SVG_LINE, std::regex("X1"), std::to_string(x1));
         lineSVG = std::regex_replace(lineSVG, std::regex("Y1"), std::to_string(y1));
         lineSVG = std::regex_replace(lineSVG, std::regex("X2"), std::to_string(x2));
         return std::regex_replace(lineSVG, std::regex("Y2"), std::to_string(y2));
+    }
+
+    std::string Dungeon_Map::SVGRoom(Room* room, int xOffset, int yOffset) {
+        std::random_device rd;
+        std::mt19937 random(rd());
+        const int width = ROOM_SIZES[random() % 5];
+        const int height = width;
+        int minX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (width - PASSAGE_SIZE);
+        if (minX < 0) { minX = 0; };
+        int minY = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (height - PASSAGE_SIZE);
+        if (minY < 0) { minY = 0; };
+        int maxX = CELL_SIZE - width;
+        if (maxX > (CELL_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2); };
+        int maxY = CELL_SIZE - height;
+        if (maxY > (CELL_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxY = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2); };
+
+        int roomX = static_cast<int>(random() % (maxX - minX + 1)) + minX;
+        //roomX -= roomX % 5;
+        int roomY = static_cast<int>(random() % (maxY - minY + 1)) + minY;
+        //roomY -= roomY % 5;
+
+        std::string roomSVG;
+        int tileX = 50 * (room->relPos->first - xOffset);
+        int tileY = 50 * (room->relPos->second - yOffset);
+        for (const direction exit: *room->exitDirections) {
+            switch (exit) {
+                case north:
+                    roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
+                    roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
+                    break;
+                case east:
+                    roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
+                    roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
+                    break;
+                case south:
+                    roomSVG.append(SVGLine(tileX + 20, tileY + 0, tileX + 20, tileY + roomY) + "\n");
+                    roomSVG.append(SVGLine(tileX + 30, tileY + 0, tileX + 30, tileY + roomY) + "\n");
+                    break;
+                case west:
+                    roomSVG.append(SVGLine(tileX + 0, tileY + 20, tileX + roomX, tileY + 20) + "\n");
+                    roomSVG.append(SVGLine(tileX + 0, tileY + 30, tileX + roomX, tileY + 30) + "\n");
+                    break;
+            }
+        }
+
+        std::string rectSVG = std::regex_replace(SVG_RECT, std::regex("W"), std::to_string(width));
+        rectSVG = std::regex_replace(rectSVG,std::regex("H"), std::to_string(height));
+        rectSVG = std::regex_replace(rectSVG,std::regex("X"), std::to_string(roomX + tileX));
+        rectSVG = std::regex_replace(rectSVG,std::regex("Y"), std::to_string(roomY + tileY));
+        roomSVG.append(rectSVG + "\n");
+
+        return roomSVG;
+    }
+
+    bool Dungeon_Map::spaceAvailable(Room *currRoom, Room *nextRoom, const direction next) const {
+        auto proposedSpace = *currRoom->relPos;
+        switch (next) {
+            case north:
+                proposedSpace.second +=1;
+                break;
+            case east:
+                proposedSpace.first +=1;
+                break;
+            case south:
+                proposedSpace.second -=1;
+                break;
+            case west:
+                proposedSpace.first -=1;
+        }
+
+        for (const Room* room : *rooms) {
+            if (room->relPos != nullptr && *room->relPos == proposedSpace){
+                return false;
+            }
+        }
+
+        if (currRoom->exitDirections == nullptr) {
+            currRoom->exitDirections = new std::vector<direction>();
+        }
+        if (nextRoom->exitDirections == nullptr) {
+            nextRoom->exitDirections = new std::vector<direction>();
+        }
+
+        currRoom->exitDirections->push_back(next);
+        switch (next) {
+            case north:
+                nextRoom->exitDirections->push_back(south);
+                break;
+            case east:
+                nextRoom->exitDirections->push_back(west);
+                break;
+            case south:
+                nextRoom->exitDirections->push_back(north);
+                break;
+            case west:
+                nextRoom->exitDirections->push_back(east);
+        }
+        nextRoom->relPos = new std::pair<int, int>(proposedSpace.first, proposedSpace.second);
+        return true;
+    }
+
+    void Dungeon_Map::generateDungeonSVG() const {
+        std::random_device rd;
+        std::mt19937 random(rd());
+
+        std::stack<Room*> toGenerate;
+        rooms->at(0)->relPos = new std::pair<int,int>(0, 0);
+        toGenerate.push(rooms->at(0));
+
+        while (!toGenerate.empty()) {
+            Room* curroom = toGenerate.top();
+            toGenerate.pop();
+
+            if (!curroom->generated) {
+                curroom->generated = true;
+                for (Room* neighbour : *passages->at(curroom->position)) {
+                    if (!neighbour->generated) {
+                        bool availableSpace = false;
+                        while (!availableSpace) {
+                            auto next = static_cast<direction>(random() % 4);
+                            if (spaceAvailable(curroom, neighbour, next)) {
+                                availableSpace = true;
+                            }
+                        }
+                        toGenerate.push(neighbour);
+                    }
+                }
+            }
+        }
+
+        int minX = 0, minY = 0, maxX = 0, maxY = 0;
+        for (Room* room : *rooms) {
+            if (room->relPos->first > maxX) {
+                maxX = room->relPos->first;
+            }
+            if (room->relPos->second > maxY) {
+                maxY = room->relPos->second;
+            }
+            if (room->relPos->first < minX) {
+                minX = room->relPos->first;
+            }
+            if (room->relPos->second < minY) {
+                minY = room->relPos->second;
+            }
+        }
+
+        int width = (maxX - minX) * CELL_SIZE;
+        int height = (maxY - minY) * CELL_SIZE;
+
+        ofstream mapFile = ofstream("Dungeon_Map.svg");
+        string header = std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(width + CELL_SIZE));
+        mapFile << std::regex_replace(header, std::regex("Y"), std::to_string(height + CELL_SIZE)) << std::endl;
+
+        for (Room* room : *rooms) {
+            mapFile << SVGRoom(room, minX, minY) << std::endl;
+        }
+
+        mapFile << SVG_FOOT;
+    }
+
+    Dungeon_Map::~Dungeon_Map() {
+        for (Room* room : *rooms) {
+            delete room->relPos;
+            delete room;
+        }
+        delete rooms;
+        for (const vector<Room*>* passage: *passages) {
+            delete passage;
+        }
+        delete passages;
     }
 } // DungeonGenerator

@@ -1,7 +1,6 @@
 //
 // Created by aowynbb on 09/06/25.
 //
-#include <stack>
 #include <string>
 #include <vector>
 
@@ -14,10 +13,14 @@ namespace DungeonGenerator {
 
 class Dungeon_Map {
 private:
+    enum direction {north, east, south, west};
     struct Room
     {
-        bool visited;
+        bool visited, generated;
         int position;
+        std::pair<int, int>* relPos;
+        std::vector<direction>* exitDirections;
+        Room* parent;
     };
 
     vector<Room*>* rooms;
@@ -26,13 +29,20 @@ private:
     int width, height;
 
 public:
-    Dungeon_Map(int size);
+    explicit Dungeon_Map(int size);
 
     void RandomizedDFS() const;
-    vector<int> UnvisitedNeighbors(int curr) const;
+    [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
 
-    void generateSVG() const;
-    std::string SVGLine(int x1, int y1, int x2, int y2) const;
+    void generateMazeSVG() const;
+    [[nodiscard]] static std::string SVGLine(int x1, int y1, int x2, int y2) ;
+    [[nodiscard]] static std::string SVGRoom(Room *room, int xOffset, int yOffset) ;
+
+    bool spaceAvailable(Room *currRoom, Room *nextRoom, direction next) const;
+
+    void generateDungeonSVG() const;
+
+    ~Dungeon_Map();
 };
 
 } // DungeonGenerator
