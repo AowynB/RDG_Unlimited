@@ -22,8 +22,7 @@ constexpr int PASSAGE_SIZE = 10;
 const int ROOM_SIZES[5] = {10, 20, 30, 40, 50};
 
 namespace DungeonGenerator {
-    Dungeon_Map::Dungeon_Map(int size)
-    {
+    Dungeon_Map::Dungeon_Map(int size) {
         rooms = new vector<Room*>;
         passages = new vector<vector<Room*>*>;
         for (int i = 0; i < size; i++)
@@ -39,9 +38,7 @@ namespace DungeonGenerator {
         generateDungeonSVG();
     }
 
-    void Dungeon_Map::RandomizedDFS() const
-    {
-        //initialize the random number generator
+    void Dungeon_Map::RandomizedDFS() const {
         std::random_device rd;
         std::mt19937 random(rd());
 
@@ -178,9 +175,10 @@ namespace DungeonGenerator {
         return std::regex_replace(lineSVG, std::regex("Y2"), std::to_string(y2));
     }
 
-    std::string Dungeon_Map::SVGRoom(Room* room, int xOffset, int yOffset) {
+    std::string Dungeon_Map::SVGRoom(const Room* room, int xOffset, int yOffset) {
         std::random_device rd;
         std::mt19937 random(rd());
+
         const int width = ROOM_SIZES[random() % 5];
         const int height = width;
         int minX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (width - PASSAGE_SIZE);
@@ -193,35 +191,15 @@ namespace DungeonGenerator {
         if (maxY > (CELL_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxY = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2); };
 
         int roomX = static_cast<int>(random() % (maxX - minX + 1)) + minX;
-        //roomX -= roomX % 5;
+        roomX -= roomX % 5;
         int roomY = static_cast<int>(random() % (maxY - minY + 1)) + minY;
-        //roomY -= roomY % 5;
+        roomY -= roomY % 5;
 
         std::string roomSVG;
         int tileX = 50 * (room->relPos->first - xOffset);
         int tileY = 50 * (room->relPos->second - yOffset);
         std::vector<direction>* exits = room->exitDirections;
-        // for (const direction exit: *room->exitDirections) {
-        //     switch (exit) {
-        //         case north:
-        //             roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
-        //             roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
-        //             break;
-        //         case east:
-        //             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
-        //             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
-        //             break;
-        //         case south:
-        //             roomSVG.append(SVGLine(tileX + 20, tileY + 0, tileX + 20, tileY + roomY) + "\n");
-        //             roomSVG.append(SVGLine(tileX + 30, tileY + 0, tileX + 30, tileY + roomY) + "\n");
-        //             break;
-        //         case west:
-        //             roomSVG.append(SVGLine(tileX + 0, tileY + 20, tileX + roomX, tileY + 20) + "\n");
-        //             roomSVG.append(SVGLine(tileX + 0, tileY + 30, tileX + roomX, tileY + 30) + "\n");
-        //             break;
-        //     }
-        // }
-        if (find(exits->begin(), exits->end(), north) != exits->end()) {
+        if (std::ranges::find(*exits, north) != exits->end()) {
             roomSVG.append(SVGLine(tileX + 20, tileY + roomY + height, tileX + 20, tileY + 50) + "\n");
             roomSVG.append(SVGLine(tileX + 30, tileY + roomY + height, tileX + 30, tileY + 50) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + height, tileX + 20, tileY + roomY + height) + "\n");
@@ -231,7 +209,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + height, tileX + roomX + width, tileY + roomY + height) + "\n");
         }
 
-        if (find(exits->begin(), exits->end(), east) != exits->end()) {
+        if (std::ranges::find(*exits, east) != exits->end()) {
             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 20, tileX + 50, tileY + 20) + "\n");
             roomSVG.append(SVGLine(tileX + roomX + width, tileY + 30, tileX + 50, tileY + 30) + "\n");
             roomSVG.append(SVGLine(tileX + roomX + width, tileY + roomY, tileX + roomX + width, tileY + 20) + "\n");
@@ -241,7 +219,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX + width, tileY + roomY, tileX + roomX + width, tileY + roomY + height) + "\n");
         }
 
-        if (find(exits->begin(), exits->end(), south) != exits->end()) {
+        if (std::ranges::find(*exits, south) != exits->end()) {
             roomSVG.append(SVGLine(tileX + 20, tileY, tileX + 20, tileY + roomY) + "\n");
             roomSVG.append(SVGLine(tileX + 30, tileY, tileX + 30, tileY + roomY) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + 20, tileY + roomY) + "\n");
@@ -251,7 +229,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX + width, tileY + roomY) + "\n");
         }
 
-        if (find(exits->begin(), exits->end(), west) != exits->end()) {
+        if (std::ranges::find(*exits, west) != exits->end()) {
             roomSVG.append(SVGLine(tileX, tileY + 20, tileX + roomX, tileY + 20) + "\n");
             roomSVG.append(SVGLine(tileX, tileY + 30, tileX + roomX, tileY + 30) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX, tileY + 20) + "\n");
@@ -260,12 +238,6 @@ namespace DungeonGenerator {
         else {
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX, tileY + roomY + height) + "\n");
         }
-
-        // std::string rectSVG = std::regex_replace(SVG_RECT, std::regex("W"), std::to_string(width));
-        // rectSVG = std::regex_replace(rectSVG,std::regex("H"), std::to_string(height));
-        // rectSVG = std::regex_replace(rectSVG,std::regex("X"), std::to_string(roomX + tileX));
-        // rectSVG = std::regex_replace(rectSVG,std::regex("Y"), std::to_string(roomY + tileY));
-        // roomSVG.append(rectSVG + "\n");
 
         return roomSVG;
     }

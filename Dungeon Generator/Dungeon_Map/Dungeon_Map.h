@@ -1,6 +1,7 @@
 //
 // Created by aowynbb on 09/06/25.
 //
+#include <random>
 #include <string>
 #include <vector>
 
@@ -17,7 +18,7 @@ private:
     struct Room
     {
         bool visited, generated;
-        int position;
+        int position, width, height;
         std::pair<int, int>* relPos;
         std::vector<direction>* exitDirections;
         Room* parent;
@@ -36,7 +37,7 @@ public:
 
     void generateMazeSVG() const;
     [[nodiscard]] static std::string SVGLine(int x1, int y1, int x2, int y2) ;
-    [[nodiscard]] static std::string SVGRoom(Room *room, int xOffset, int yOffset) ;
+    [[nodiscard]] static std::string SVGRoom(const Room *room, int xOffset, int yOffset) ;
 
     bool spaceAvailable(Room *currRoom, Room *nextRoom, direction next) const;
 
