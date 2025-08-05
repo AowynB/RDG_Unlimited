@@ -8,5 +8,5 @@
 int main()
 {
     DungeonGenerator::Dungeon_Map dmap(10);
-    Random_Table rTable("doorType.txt");
+    Random_Table rTable("RandomTables/doorType.txt");
 }
