@@ -1,0 +1,10 @@
+1 Death Trap
+2 Lair
+3 Maze
+4 Mine
+5 Planar Gate
+6 Stronghold
+7 Temple or Shrine
+8 Tomb
+9 Treasure Vault
+10 General

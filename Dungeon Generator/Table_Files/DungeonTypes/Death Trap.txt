@@ -1,0 +1,6 @@
+1 Antechamber or waiting room for spectators
+8 Guardroom fortified against intruders
+11 Vault for holding important treasures
+14 Room containing a puzzle that must be solved to bypass a trap or monster
+19 Trap designed to kill or capture creatures
+20 Observation room, allowing guards or spectators to observe creatures moving through the dungeon
