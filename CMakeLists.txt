@@ -8,5 +8,4 @@ add_executable(RDG_Unlimited main.cpp
         "Dungeon Generator/Dungeon_Map.h"
         "Dungeon Generator/Random_Table.h"
         main.cpp
-        "Dungeon Generator/Random_Table.h"
 )

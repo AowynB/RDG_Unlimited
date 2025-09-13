@@ -12,4 +12,7 @@ int main()
     std::cout << "Hello user, please enter the number of rooms for your dungeon: ";
     std::cin >> numRooms;
     DungeonGenerator::Dungeon_Map dmap(numRooms);
+    dmap.RandomizedDFS();
+    dmap.generateDungeonSVG();
+    dmap.generateDungeonDescription();
 }

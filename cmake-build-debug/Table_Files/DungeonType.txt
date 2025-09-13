@@ -7,4 +7,3 @@
 7 Temple or Shrine
 8 Tomb
 9 Treasure Vault
-10 General

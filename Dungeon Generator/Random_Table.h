@@ -11,10 +11,10 @@
 #include <iostream>
 
 namespace Table {
+    static std::mt19937* random;
 
 class Random_Table {
 private:
-    static std::mt19937* random; //Sudo random number generator for "rolling" on the table
     std::vector<std::pair<int, std::string>> table; //data structure containing the table
     int diceMax; //the maximum number that can be rolled
 public:
@@ -45,7 +45,6 @@ public:
 
             table.push_back(entry);
         }
-
         diceMax = table[table.size() - 1].first;
     }
 
@@ -55,8 +54,8 @@ public:
      * and returns it
      * @return a randomly chosen return string from table
      */
-    std::string Random_Table::roll() {
-        const int index = static_cast<int>(random() % diceMax);
+    [[nodiscard]] std::string roll() const{
+        const int index = static_cast<int>((*random)() % diceMax);
         for (const auto&[upper_bound, value] : table) {
             if (index < upper_bound) {
                 return value;
