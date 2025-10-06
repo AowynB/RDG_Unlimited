@@ -33,7 +33,7 @@ private:
     [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
     [[nodiscard]] static std::string SVGLine(int x1, int y1, int x2, int y2);
     [[nodiscard]] static std::string SVGRoom(Room *room, int xOffset, int yOffset);
-    bool spaceAvailable(const Room *currRoom, Room *nextRoom, direction next) const;
+    bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
     static void placeRoom(Room *currRoom, Room *nextRoom, direction next) ;
     static std::string describeExits(const Room *room);
 public:

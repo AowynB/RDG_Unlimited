@@ -13,6 +13,7 @@ int main()
     std::cin >> numRooms;
     DungeonGenerator::Dungeon_Map dmap(numRooms);
     dmap.RandomizedDFS();
+    dmap.generateMazeSVG();
     dmap.generateDungeonSVG();
     dmap.generateDungeonDescription();
 }

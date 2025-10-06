@@ -24,6 +24,12 @@ using std::stack, std::string, std::ofstream, std::ifstream, std::regex, std::re
 constexpr int CELL_SIZE = 50;
 constexpr int PASSAGE_SIZE = 10;
 constexpr int ROOM_SIZES[4] = {10, 30, 40, 50};
+constexpr DungeonGenerator::direction DIRECTIONS[4] =
+    {DungeonGenerator::north,
+    DungeonGenerator::south,
+    DungeonGenerator::east,
+    DungeonGenerator::west};
+
 const auto DOOR_TABLE = Table::Random_Table("Table_Files/doorType.txt");
 const auto ROOM_CONDITION_TABLE = Table::Random_Table("Table_Files/CurrentRoomState.txt");
 const auto DUNGEON_TYPE_TABLE = Table::Random_Table("Table_Files/DungeonType.txt");
@@ -230,8 +236,8 @@ namespace DungeonGenerator {
         return roomSVG;
     }
 
-    bool Dungeon_Map::spaceAvailable(const Room *currRoom, Room *nextRoom, const direction next) const {
-        auto proposedSpace = currRoom->relPos;
+    bool Dungeon_Map::spaceAvailable(const std::pair<int, int> &currPos, const direction next) const {
+        auto proposedSpace = currPos;
         switch (next) {
             case north:
                 proposedSpace.second +=1;
@@ -304,6 +310,7 @@ namespace DungeonGenerator {
                     break;
                 default:
                     std::cout << "Error in Dungeon_Map::describeExits(): Invalid exit Direction" << std::endl;
+                    exitDir = "Invalid direction";
             }
             std::string currExitDescription = std::regex_replace(DOOR_DESCRIPTION, regex("DT"), DOOR_TABLE.roll());
             if (!first) {
@@ -323,31 +330,65 @@ namespace DungeonGenerator {
     void Dungeon_Map::generateDungeonSVG() const {
         std::random_device rd;
         std::mt19937 random(rd());
+        int roomsGenerated = 0;
 
         std::stack<Room*> toGenerate;
+        std::stack<std::pair<Room*, std::vector<direction>>> decisionHistory;
         rooms.at(0)->relPos = std::pair<int,int>(0, 0);
+
         toGenerate.push(rooms.at(0));
 
-        while (!toGenerate.empty()) {
-            Room* curroom = toGenerate.top();
-            toGenerate.pop();
+        Room* curr_room;
+        bool backTracking = false;
 
-            if (!curroom->generated) {
-                curroom->generated = true;
-                for (Room* neighbour : passages.at(curroom->position)) {
+        while (!toGenerate.empty()) {
+            vector<direction> directionsChecked;
+            if (!backTracking) {
+                curr_room = toGenerate.top();
+                toGenerate.pop();
+            }
+            else {
+                curr_room = decisionHistory.top().first;
+                directionsChecked = decisionHistory.top().second;
+                curr_room->generated = false;
+                curr_room->exits.pop_back();
+                decisionHistory.pop();
+            }
+
+            if (!curr_room->generated) {
+                curr_room->generated = true;
+                for (Room* neighbour : passages.at(curr_room->position)) {
                     if (!neighbour->generated) {
+                        if (!backTracking) {
+                            std::cout << "Generating room " << curr_room->position << std::endl;
+                        }
                         bool availableSpace = false;
                         while (!availableSpace) {
                             auto next = static_cast<direction>(random() % 4);
-                            if (spaceAvailable(curroom, neighbour, next)) {
-                                placeRoom(curroom, neighbour, next);
-                                availableSpace = true;
+                            if (std::count(directionsChecked.begin(), directionsChecked.end(), next) == 0) {
+                                directionsChecked.push_back(next);
                             }
+
+                            if (spaceAvailable(curr_room->relPos, next)) {
+                                placeRoom(curr_room, neighbour, next);
+                                decisionHistory.emplace(curr_room, directionsChecked);
+                                availableSpace = true;
+                                backTracking = false;
+                            }
+
+                            if (directionsChecked.size() == 4 && !availableSpace) {
+                                curr_room->generated = false;
+                                curr_room->exits.clear();
+                                backTracking = true;
+                                break;
+                            }
+
                         }
                         toGenerate.push(neighbour);
                     }
                 }
             }
+
         }
 
         int minX = 0, minY = 0, maxX = 0, maxY = 0;
