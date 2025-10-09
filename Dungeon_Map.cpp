@@ -85,6 +85,157 @@ namespace DungeonGenerator {
         }
     }
 
+    void Dungeon_Map::generateDungeonLayout() const {
+        //decision contains information about one room placement
+        struct decision
+        {
+            Room *parent;
+            Room *child;
+            direction lastDir;
+            bool directionsChecked[4] = { false, false, false, false };
+        };
+
+        std::random_device rd;
+        std::mt19937 random(rd());
+
+        //a stack of all rooms that need to be generated and the room that placed them on the stack
+        std::stack<std::pair<Room*, Room*>> toGenerate;
+        //a stack of all successful decisions that have been made to reach the current decision
+        std::stack<decision> decisionHistory;
+
+        //set the room at vector index 0 to be at position (0,0) relative to all other rooms
+        rooms.at(0)->relPos = std::pair<int,int>(0, 0);
+        toGenerate.emplace(rooms.at(0), nullptr); //push the first room onto the stack
+
+        //a pointer to the current room whose children are being placed
+        bool backTracking = false; //a boolean flag used to indicate weather or not we are backtracking
+
+        while (!toGenerate.empty()) {
+            Room *curr_room;
+            Room *parent_room;
+            bool directionsChecked[4] = { false, false, false, false };
+
+            if (backTracking) {
+                curr_room = decisionHistory.top().child;
+                parent_room = decisionHistory.top().parent;
+                curr_room->exits[decisionHistory.top().lastDir] = false;
+                for (int i = 0; i < 4; i++) { directionsChecked[i] = decisionHistory.top().directionsChecked[i]; }
+                decisionHistory.pop();
+            }
+            else {
+                curr_room = toGenerate.top().first;
+                parent_room = toGenerate.top().second;
+                toGenerate.pop();
+            }
+
+            if (!curr_room->generated) {
+                bool placed = false;
+                while (!placed) {
+                    const auto next = static_cast<direction>(random() % 4);
+                    directionsChecked[next] = true;
+                    if (spaceAvailable(parent_room->relPos, next)) {
+                        placeRoom(parent_room, curr_room, next);
+
+                        for (Room* child : passages.at(curr_room->position)) {
+                            toGenerate.emplace(child, curr_room);
+                        }
+
+                        auto d = decision(parent_room, curr_room, next);
+                        for (int i = 0; i < 4; i++) { d.directionsChecked[i] = directionsChecked[i]; }
+                        decisionHistory.emplace(d);
+
+                        backTracking = false;
+                        curr_room->generated = true;
+                        placed = true;
+                    }
+                    else {
+                        if (!std::all_of(std::begin(directionsChecked), std::end(directionsChecked),[](bool i){return i;})) {
+                            for (bool & exit : curr_room->exits) { exit = false; }
+                            backTracking = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        /*
+        while (!toGenerate.empty()) { //while there are still rooms left in toGenerate
+            bool directionsChecked[4] = { false, false, false, false }; //declare an array indicating which directions have been checked
+            //if the program isn't backtracking, get the next room to generate off of the top of the stack
+            if (!backTracking) {
+                curr_room = toGenerate.top();
+                toGenerate.pop();
+            }
+            //if we are backtracking, get information from the top of the decision stack to return to the last decision
+            else {
+                curr_room = decisionHistory.top().room;
+                for (int i = 0; i < 4; ++i) {
+                    directionsChecked[i] = decisionHistory.top().directionsChecked[i];
+                }
+                curr_room->generated = false;
+                curr_room->exits[decisionHistory.top().lastDirection] = false;
+                decisionHistory.pop();
+            }
+
+            //if the current room has not been generated
+            if (!curr_room->generated) {
+                curr_room->generated = true;
+                //for each room connected to this one
+                for (Room* neighbour : passages.at(curr_room->position)) {
+                    //if the room has not yet been generated
+                    if (!neighbour->generated) {
+                        //find a space next to this one that is unoccupied
+                        bool placed = false;
+                        while (!placed) {
+                            //determine a random direction to check
+                            const auto next = static_cast<direction>(random() % 4);
+                            //if the direction hasn't been checked yet
+                            if (directionsChecked[next] == false) {
+                                //if there is a free space in that direction
+                                if (spaceAvailable(curr_room->relPos, next)) {
+                                    //put the room in the available space
+                                    placeRoom(curr_room, neighbour, next);
+
+                                    //create a new decision indicating the current room, directions checked, and direction selected
+                                    auto newDecision = decision(curr_room);
+                                    for (int i = 0; i < 4; ++i) {
+                                        newDecision.directionsChecked[i] = directionsChecked[i];
+                                    }
+                                    newDecision.lastDirection = next;
+                                    decisionHistory.emplace(newDecision);
+
+                                    placed = true; //indicate that the room has been placed
+                                    backTracking = false; //ensure we are no longer backtracking if we where previously
+                                }
+                                //indicate that this direction has now been checked
+                                directionsChecked[next] = true;
+                            }
+
+                            //check to see if we have checked all directions
+                            bool allChecked = true;
+                            for (const bool i : directionsChecked) {
+                                if (!i) { allChecked = false; }
+                            }
+
+                            //if we have checked all directions and the room has not been placed begin backtracking
+                            if (allChecked && !placed) {
+                                curr_room->generated = false;
+                                for (bool & exit : curr_room->exits) {
+                                	exit = false;
+								}
+                                backTracking = true;
+                                break;
+                            }
+                        }
+                        toGenerate.push(neighbour);
+                    }
+                }
+            }
+        }
+        */
+    }
+
     vector<int> Dungeon_Map::UnvisitedNeighbors(const int curr) const
     {
         vector<int> unvisitedNeighbors; // a list of neighboring cells that have not been visited by RandomizedDFS
@@ -106,7 +257,7 @@ namespace DungeonGenerator {
             unvisitedNeighbors.emplace_back(curr + 1);
         }
 
-        return unvisitedNeighbors; //return the list of unvisited neighbors
+        return unvisitedNeighbors;
     }
 
     void Dungeon_Map::generateMazeSVG() const
@@ -311,91 +462,7 @@ namespace DungeonGenerator {
     }
 
     void Dungeon_Map::generateDungeonSVG() const {
-        struct decision
-        {
-            Room *room;
-            bool directionsChecked[4] = { false, false, false, false };
-            direction lastDirection;
-        };
-
-        std::random_device rd;
-        std::mt19937 random(rd());
-
-        std::stack<Room*> toGenerate;
-        std::stack<decision> decisionHistory;
-        rooms.at(0)->relPos = std::pair<int,int>(0, 0);
-
-        toGenerate.push(rooms.at(0));
-
-        Room* curr_room;
-        bool backTracking = false;
-
-        int counter = 0;
-
-        while (!toGenerate.empty()) {
-            bool directionsChecked[4] = { false, false, false, false };
-            if (!backTracking) {
-                curr_room = toGenerate.top();
-                toGenerate.pop();
-            }
-            else {
-                curr_room = decisionHistory.top().room;
-                for (int i = 0; i < 4; ++i) {
-                    directionsChecked[i] = decisionHistory.top().directionsChecked[i];
-                }
-                curr_room->generated = false;
-                curr_room->exits[decisionHistory.top().lastDirection] = false;
-                decisionHistory.pop();
-            }
-
-            if (!curr_room->generated) {
-                curr_room->generated = true;
-                for (Room* neighbour : passages.at(curr_room->position)) {
-                    if (!neighbour->generated) {
-                        bool availableSpace = false;
-                        while (!availableSpace) {
-
-                            auto next = static_cast<direction>(random() % 4);
-                            if (directionsChecked[next] == false) {
-                                directionsChecked[next] = true;
-                            }
-
-                            if (spaceAvailable(curr_room->relPos, next)) {
-                                placeRoom(curr_room, neighbour, next);
-
-                                decision newDecision = decision(curr_room);
-                                for (int i = 0; i < 4; ++i) {
-                                    newDecision.directionsChecked[i] = directionsChecked[i];
-                                }
-                                newDecision.lastDirection = next;
-                                decisionHistory.emplace(newDecision);
-                                availableSpace = true;
-                                backTracking = false;
-                            }
-
-                            bool allChecked = true;
-                            for (int i = 0; i < 4; ++i) {
-                                if (!directionsChecked[i]) {
-                                    allChecked = false;
-                                }
-                            }
-
-                            if (allChecked && !availableSpace) {
-                                curr_room->generated = false;
-                                for (int i = 0; i < 4; ++i) {
-                                	curr_room->exits[i] = false;
-								}
-                                backTracking = true;
-                                break;
-                            }
-                        }
-                        toGenerate.push(neighbour);
-                    }
-                }
-            }
-
-        }
-
+        generateDungeonLayout();
         int minX = 0, minY = 0, maxX = 0, maxY = 0;
         for (Room* room : rooms) {
             if (room->relPos.first > maxX) {
