@@ -192,7 +192,7 @@ namespace DungeonGenerator {
         const int tileX = 50 * (room->relPos.first - xOffset);
         const int tileY = 50 * (room->relPos.second - yOffset);
 
-        if (std::ranges::find(room->exits, north) != room->exits.end()) {
+        if (room->exits[north] == true) {
             roomSVG.append(SVGLine(tileX + 20, tileY + roomY + room->height, tileX + 20, tileY + 50) + "\n");
             roomSVG.append(SVGLine(tileX + 30, tileY + roomY + room->height, tileX + 30, tileY + 50) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + room->height, tileX + 20, tileY + roomY + room->height) + "\n");
@@ -202,7 +202,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY + room->height, tileX + roomX + room->width, tileY + roomY + room->height) + "\n");
         }
 
-        if (std::ranges::find(room->exits, east) != room->exits.end()) {
+        if (room->exits[east] == true) {
             roomSVG.append(SVGLine(tileX + roomX + room->width, tileY + 20, tileX + 50, tileY + 20) + "\n");
             roomSVG.append(SVGLine(tileX + roomX + room->width, tileY + 30, tileX + 50, tileY + 30) + "\n");
             roomSVG.append(SVGLine(tileX + roomX + room->width, tileY + roomY, tileX + roomX + room->width, tileY + 20) + "\n");
@@ -212,7 +212,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX + room->width, tileY + roomY, tileX + roomX + room->width, tileY + roomY + room->height) + "\n");
         }
 
-        if (std::ranges::find(room->exits, south) != room->exits.end()) {
+        if (room->exits[south] == true) {
             roomSVG.append(SVGLine(tileX + 20, tileY, tileX + 20, tileY + roomY) + "\n");
             roomSVG.append(SVGLine(tileX + 30, tileY, tileX + 30, tileY + roomY) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + 20, tileY + roomY) + "\n");
@@ -222,7 +222,7 @@ namespace DungeonGenerator {
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX + room->width, tileY + roomY) + "\n");
         }
 
-        if (std::ranges::find(room->exits, west) != room->exits.end()) {
+        if (room->exits[west] == true) {
             roomSVG.append(SVGLine(tileX, tileY + 20, tileX + roomX, tileY + 20) + "\n");
             roomSVG.append(SVGLine(tileX, tileY + 30, tileX + roomX, tileY + 30) + "\n");
             roomSVG.append(SVGLine(tileX + roomX, tileY + roomY, tileX + roomX, tileY + 20) + "\n");
@@ -252,7 +252,7 @@ namespace DungeonGenerator {
                 proposedSpace.first -=1;
                 break;
             default:
-                std::cout << "Error in Dungeon_Map::spaceAvailable(): Invalid direction" << std::endl;
+                std::cerr << "Error in Dungeon_Map::spaceAvailable(): Invalid direction" << std::endl;
                 exit(1);
         }
 
@@ -265,53 +265,36 @@ namespace DungeonGenerator {
     }
 
     void Dungeon_Map::placeRoom(Room *currRoom, Room *nextRoom, const direction next) {
-        currRoom->exits.push_back(next);
+        currRoom->exits[next] = true;
         switch (next) {
             case north:
-                nextRoom->exits.push_back(south);
+                nextRoom->exits[direction::south] = true;
                 nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second + 1};
                 break;
             case east:
-                nextRoom->exits.push_back(west);
+                nextRoom->exits[direction::west] = true;
                 nextRoom->relPos = {currRoom->relPos.first + 1, currRoom->relPos.second};
                 break;
             case south:
-                nextRoom->exits.push_back(north);
+                nextRoom->exits[direction::north] = true;
                 nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second - 1};
                 break;
             case west:
-                nextRoom->exits.push_back(east);
+                nextRoom->exits[direction::east] = true;
                 nextRoom->relPos = {currRoom->relPos.first - 1, currRoom->relPos.second};
                 break;
             default:
-                std::cout << "Error in Dungeon_Map::placeRoom(): Invalid direction" << std::endl;
+                std::cerr << "Error in Dungeon_Map::placeRoom(): Invalid direction" << std::endl;
                 exit(1);
         }
-
     }
 
     std::string Dungeon_Map::describeExits(const Room *room) {
         bool first = true;
         std::string doorDescriptions;
-        for (const direction exit: room->exits) {
-            std::string exitDir;
-            switch (exit) {
-                case north:
-                    exitDir = "north";
-                    break;
-                case east:
-                    exitDir = "east";
-                    break;
-                case south:
-                    exitDir = "south";
-                    break;
-                case west:
-                    exitDir = "west";
-                    break;
-                default:
-                    std::cout << "Error in Dungeon_Map::describeExits(): Invalid exit Direction" << std::endl;
-                    exitDir = "Invalid direction";
-            }
+        std::string directions[4] = {"north", "east", "south", "west"};
+        for (int i = 0; i < 4; ++i) {
+            std::string exitDir = directions[i];
             std::string currExitDescription = std::regex_replace(DOOR_DESCRIPTION, regex("DT"), DOOR_TABLE.roll());
             if (!first) {
                 doorDescriptions += ",";
@@ -322,18 +305,24 @@ namespace DungeonGenerator {
             doorDescriptions += std::regex_replace(currExitDescription, regex("DIR"), exitDir);
         }
         if (doorDescriptions.empty()) {
-            std::cout << "Error in Dungeon_Map::describeExits: room has no exits" << std::endl;
+            std::cerr << "Error in Dungeon_Map::describeExits: room has no exits" << std::endl;
         }
         return doorDescriptions;
     }
 
     void Dungeon_Map::generateDungeonSVG() const {
+        struct decision
+        {
+            Room *room;
+            bool directionsChecked[4] = { false, false, false, false };
+            direction lastDirection;
+        };
+
         std::random_device rd;
         std::mt19937 random(rd());
-        int roomsGenerated = 0;
 
         std::stack<Room*> toGenerate;
-        std::stack<std::pair<Room*, std::vector<direction>>> decisionHistory;
+        std::stack<decision> decisionHistory;
         rooms.at(0)->relPos = std::pair<int,int>(0, 0);
 
         toGenerate.push(rooms.at(0));
@@ -341,17 +330,21 @@ namespace DungeonGenerator {
         Room* curr_room;
         bool backTracking = false;
 
+        int counter = 0;
+
         while (!toGenerate.empty()) {
-            vector<direction> directionsChecked;
+            bool directionsChecked[4] = { false, false, false, false };
             if (!backTracking) {
                 curr_room = toGenerate.top();
                 toGenerate.pop();
             }
             else {
-                curr_room = decisionHistory.top().first;
-                directionsChecked = decisionHistory.top().second;
+                curr_room = decisionHistory.top().room;
+                for (int i = 0; i < 4; ++i) {
+                    directionsChecked[i] = decisionHistory.top().directionsChecked[i];
+                }
                 curr_room->generated = false;
-                curr_room->exits.pop_back();
+                curr_room->exits[decisionHistory.top().lastDirection] = false;
                 decisionHistory.pop();
             }
 
@@ -359,30 +352,42 @@ namespace DungeonGenerator {
                 curr_room->generated = true;
                 for (Room* neighbour : passages.at(curr_room->position)) {
                     if (!neighbour->generated) {
-                        if (!backTracking) {
-                            std::cout << "Generating room " << curr_room->position << std::endl;
-                        }
                         bool availableSpace = false;
                         while (!availableSpace) {
+
                             auto next = static_cast<direction>(random() % 4);
-                            if (std::count(directionsChecked.begin(), directionsChecked.end(), next) == 0) {
-                                directionsChecked.push_back(next);
+                            if (directionsChecked[next] == false) {
+                                directionsChecked[next] = true;
                             }
 
                             if (spaceAvailable(curr_room->relPos, next)) {
                                 placeRoom(curr_room, neighbour, next);
-                                decisionHistory.emplace(curr_room, directionsChecked);
+
+                                decision newDecision = decision(curr_room);
+                                for (int i = 0; i < 4; ++i) {
+                                    newDecision.directionsChecked[i] = directionsChecked[i];
+                                }
+                                newDecision.lastDirection = next;
+                                decisionHistory.emplace(newDecision);
                                 availableSpace = true;
                                 backTracking = false;
                             }
 
-                            if (directionsChecked.size() == 4 && !availableSpace) {
+                            bool allChecked = true;
+                            for (int i = 0; i < 4; ++i) {
+                                if (!directionsChecked[i]) {
+                                    allChecked = false;
+                                }
+                            }
+
+                            if (allChecked && !availableSpace) {
                                 curr_room->generated = false;
-                                curr_room->exits.clear();
+                                for (int i = 0; i < 4; ++i) {
+                                	curr_room->exits[i] = false;
+								}
                                 backTracking = true;
                                 break;
                             }
-
                         }
                         toGenerate.push(neighbour);
                     }
@@ -421,13 +426,13 @@ namespace DungeonGenerator {
         mapFile << SVG_FOOT;
     }
 
-    void Dungeon_Map::generateDungeonDescription() {
+    void Dungeon_Map::generateDungeonDescription() const {
         //Determine Dungeon Type
         const std::string roomUseFile = "Table_Files/DungeonTypes/" + DUNGEON_TYPE_TABLE.roll() + ".txt";
         const auto ROOM_USE = Table::Random_Table(roomUseFile);
 
         for (Room* room : rooms) {
-            room->description = std::regex_replace(ROOM_DESCRIPTION, regex("N"), std::to_string(room->exits.size()));
+            room->description = std::regex_replace(ROOM_DESCRIPTION, regex("N"), std::to_string(4));
             room->description = std::regex_replace(room->description, regex("ED"), describeExits(room));
             room->description = std::regex_replace(room->description, regex("RU"), ROOM_USE.roll());
             room->description = std::regex_replace(room->description, regex("RC"), ROOM_CONDITION_TABLE.roll());

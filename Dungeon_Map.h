@@ -20,7 +20,7 @@ private:
         bool visited, generated;
         int position, width, height;
         std::pair<int, int> relPos = {0, 0};
-        std::vector<direction> exits = std::vector<direction>();
+        bool exits[4] = {false, false, false, false};
         std::string SVGString;
         std::string description;
     };
@@ -30,10 +30,11 @@ private:
 
     int width, height;
 
-    [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
     [[nodiscard]] static std::string SVGLine(int x1, int y1, int x2, int y2);
     [[nodiscard]] static std::string SVGRoom(Room *room, int xOffset, int yOffset);
-    bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
+
+    [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
+    [[nodiscard]] bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
     static void placeRoom(Room *currRoom, Room *nextRoom, direction next) ;
     static std::string describeExits(const Room *room);
 public:
@@ -45,7 +46,7 @@ public:
 
     void generateDungeonSVG() const;
 
-    void generateDungeonDescription();
+    void generateDungeonDescription() const;
 
     ~Dungeon_Map();
 };

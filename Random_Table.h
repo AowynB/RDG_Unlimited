@@ -11,7 +11,6 @@
 #include <iostream>
 
 namespace Table {
-    static std::mt19937* random;
 
 class Random_Table {
 private:
@@ -20,15 +19,10 @@ private:
 public:
     /**
      * Constructor for the Random_Table class
-     * Initializes and seeds the mt19937 random number generator
      * Reads the provided file line by line and saves all entries with their maximum roll and return value
      * saves diceMax as the highest maximum roll
      */
     explicit Random_Table(const std::string &fileName) {
-        if (random == nullptr) {
-            random = new std::mt19937(std::random_device()());
-        }
-
         std::ifstream tableFile(fileName);
         if (!tableFile.is_open()) {
             std::cout << "Error opening file " << fileName << "\n";
@@ -55,7 +49,10 @@ public:
      * @return a randomly chosen return string from table
      */
     [[nodiscard]] std::string roll() const{
-        const int index = static_cast<int>((*random)() % diceMax);
+        std::random_device rd;
+        std::mt19937 random(rd());
+
+        const int index = static_cast<int>((random)() % diceMax);
         for (const auto&[upper_bound, value] : table) {
             if (index < upper_bound) {
                 return value;
