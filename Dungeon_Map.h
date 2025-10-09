@@ -35,12 +35,16 @@ private:
 
     [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
     [[nodiscard]] bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
+
     static void placeRoom(Room *currRoom, Room *nextRoom, direction next) ;
     static std::string describeExits(const Room *room);
+
 public:
     explicit Dungeon_Map(int size);
 
     void RandomizedDFS();
+
+    void generateDungeonLayout() const;
 
     void generateMazeSVG() const;
 
