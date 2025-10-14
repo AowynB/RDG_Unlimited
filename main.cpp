@@ -9,9 +9,9 @@
 int main()
 {
     int numRooms;
-    //std::cout << "Hello user, please enter the number of rooms for your dungeon: ";
-    //std::cin >> numRooms;
-    DungeonGenerator::Dungeon_Map dmap(500);
+    std::cout << "Hello user, please enter the number of rooms for your dungeon: ";
+    std::cin >> numRooms;
+    DungeonGenerator::Dungeon_Map dmap(numRooms);
     dmap.RandomizedDFS();
     dmap.generateMazeSVG();
     dmap.generateDungeonSVG();

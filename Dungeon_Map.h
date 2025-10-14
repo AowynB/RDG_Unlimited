@@ -19,7 +19,7 @@ private:
     {
         bool visited, generated;
         int position, width, height;
-        std::pair<int, int> relPos = {0, 0};
+        std::pair<int, int> relPos = {-1, -1};
         bool exits[4] = {false, false, false, false};
         std::string SVGString;
         std::string description;
@@ -35,6 +35,7 @@ private:
 
     [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
     [[nodiscard]] bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
+	void placeExits() const;
 
     static void placeRoom(Room *currRoom, Room *nextRoom, direction next) ;
     static std::string describeExits(const Room *room);

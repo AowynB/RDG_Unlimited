@@ -89,8 +89,7 @@ namespace DungeonGenerator {
         //decision contains information about one room placement
         struct decision
         {
-            Room *parent;
-            Room *child;
+            Room *room;
             direction lastDir;
             bool directionsChecked[4] = { false, false, false, false };
         };
@@ -99,68 +98,19 @@ namespace DungeonGenerator {
         std::mt19937 random(rd());
 
         //a stack of all rooms that need to be generated and the room that placed them on the stack
-        std::stack<std::pair<Room*, Room*>> toGenerate;
+        std::stack<Room*> toGenerate;
         //a stack of all successful decisions that have been made to reach the current decision
         std::stack<decision> decisionHistory;
 
         //set the room at vector index 0 to be at position (0,0) relative to all other rooms
         rooms.at(0)->relPos = std::pair<int,int>(0, 0);
-        toGenerate.emplace(rooms.at(0), nullptr); //push the first room onto the stack
+		toGenerate.emplace(rooms.at(0));
 
         //a pointer to the current room whose children are being placed
         bool backTracking = false; //a boolean flag used to indicate weather or not we are backtracking
 
-        while (!toGenerate.empty()) {
-            Room *curr_room;
-            Room *parent_room;
-            bool directionsChecked[4] = { false, false, false, false };
-
-            if (backTracking) {
-                curr_room = decisionHistory.top().child;
-                parent_room = decisionHistory.top().parent;
-                curr_room->exits[decisionHistory.top().lastDir] = false;
-                for (int i = 0; i < 4; i++) { directionsChecked[i] = decisionHistory.top().directionsChecked[i]; }
-                decisionHistory.pop();
-            }
-            else {
-                curr_room = toGenerate.top().first;
-                parent_room = toGenerate.top().second;
-                toGenerate.pop();
-            }
-
-            if (!curr_room->generated) {
-                bool placed = false;
-                while (!placed) {
-                    const auto next = static_cast<direction>(random() % 4);
-                    directionsChecked[next] = true;
-                    if (spaceAvailable(parent_room->relPos, next)) {
-                        placeRoom(parent_room, curr_room, next);
-
-                        for (Room* child : passages.at(curr_room->position)) {
-                            toGenerate.emplace(child, curr_room);
-                        }
-
-                        auto d = decision(parent_room, curr_room, next);
-                        for (int i = 0; i < 4; i++) { d.directionsChecked[i] = directionsChecked[i]; }
-                        decisionHistory.emplace(d);
-
-                        backTracking = false;
-                        curr_room->generated = true;
-                        placed = true;
-                    }
-                    else {
-                        if (!std::all_of(std::begin(directionsChecked), std::end(directionsChecked),[](bool i){return i;})) {
-                            for (bool & exit : curr_room->exits) { exit = false; }
-                            backTracking = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
         while (!toGenerate.empty()) { //while there are still rooms left in toGenerate
+			Room* curr_room;
             bool directionsChecked[4] = { false, false, false, false }; //declare an array indicating which directions have been checked
             //if the program isn't backtracking, get the next room to generate off of the top of the stack
             if (!backTracking) {
@@ -173,8 +123,8 @@ namespace DungeonGenerator {
                 for (int i = 0; i < 4; ++i) {
                     directionsChecked[i] = decisionHistory.top().directionsChecked[i];
                 }
+				curr_room->exits[decisionHistory.top().lastDir] = false;
                 curr_room->generated = false;
-                curr_room->exits[decisionHistory.top().lastDirection] = false;
                 decisionHistory.pop();
             }
 
@@ -198,11 +148,8 @@ namespace DungeonGenerator {
                                     placeRoom(curr_room, neighbour, next);
 
                                     //create a new decision indicating the current room, directions checked, and direction selected
-                                    auto newDecision = decision(curr_room);
-                                    for (int i = 0; i < 4; ++i) {
-                                        newDecision.directionsChecked[i] = directionsChecked[i];
-                                    }
-                                    newDecision.lastDirection = next;
+                                    auto newDecision = decision(curr_room, next);
+                                    for (int i = 0; i < 4; ++i) { newDecision.directionsChecked[i] = directionsChecked[i]; }
                                     decisionHistory.emplace(newDecision);
 
                                     placed = true; //indicate that the room has been placed
@@ -221,9 +168,6 @@ namespace DungeonGenerator {
                             //if we have checked all directions and the room has not been placed begin backtracking
                             if (allChecked && !placed) {
                                 curr_room->generated = false;
-                                for (bool & exit : curr_room->exits) {
-                                	exit = false;
-								}
                                 backTracking = true;
                                 break;
                             }
@@ -233,7 +177,6 @@ namespace DungeonGenerator {
                 }
             }
         }
-        */
     }
 
     vector<int> Dungeon_Map::UnvisitedNeighbors(const int curr) const
@@ -315,14 +258,30 @@ namespace DungeonGenerator {
         std::random_device rd;
         std::mt19937 random(rd());
 
+		int numExits = 0;
+		for (int i = 0; i < 4; i++){
+			if(room->exits[i]){
+				numExits++;
+			}
+		}
+
         room->width = ROOM_SIZES[random() % std::size(ROOM_SIZES)];
+ 		room->height = ROOM_SIZES[random() % std::size(ROOM_SIZES)];
 
         //if width is 10 the room is a passage extension and should have a height of 10
-        if (room->width == 10) {
-            room->height = 10;
-        }
-        else {
-            room->height = ROOM_SIZES[random() % std::size(ROOM_SIZES)];
+        if (room->width == 10 || room->height == 10) {
+			if(numExits > 1){
+            	room->height = 10;
+				room->width = 10;
+			}
+			else {
+            	if(room->width == 10){
+					room->width = 30;
+				}
+				else{
+					room->height = 30;
+				}
+			}
         }
 
         int minX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (room->width - PASSAGE_SIZE);
@@ -416,22 +375,17 @@ namespace DungeonGenerator {
     }
 
     void Dungeon_Map::placeRoom(Room *currRoom, Room *nextRoom, const direction next) {
-        currRoom->exits[next] = true;
         switch (next) {
             case north:
-                nextRoom->exits[direction::south] = true;
                 nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second + 1};
                 break;
             case east:
-                nextRoom->exits[direction::west] = true;
                 nextRoom->relPos = {currRoom->relPos.first + 1, currRoom->relPos.second};
                 break;
             case south:
-                nextRoom->exits[direction::north] = true;
                 nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second - 1};
                 break;
             case west:
-                nextRoom->exits[direction::east] = true;
                 nextRoom->relPos = {currRoom->relPos.first - 1, currRoom->relPos.second};
                 break;
             default:
@@ -461,8 +415,28 @@ namespace DungeonGenerator {
         return doorDescriptions;
     }
 
+	void Dungeon_Map::placeExits() const{
+		for(Room* room : rooms) {
+			for(Room* neighbour : passages.at(room->position)){
+				if(neighbour->relPos.second == room->relPos.second + 1){
+					room->exits[north] = true;
+				}
+				else if(neighbour->relPos.first == room->relPos.first + 1){
+					room->exits[east] = true;
+				}
+				else if(neighbour->relPos.second == room->relPos.second - 1){
+					room->exits[south] = true;
+				}
+				else if(neighbour->relPos.first == room->relPos.first - 1){
+					room->exits[west] = true;
+				}
+			}
+		}
+	}
+
     void Dungeon_Map::generateDungeonSVG() const {
         generateDungeonLayout();
+		placeExits();
         int minX = 0, minY = 0, maxX = 0, maxY = 0;
         for (Room* room : rooms) {
             if (room->relPos.first > maxX) {
@@ -478,6 +452,9 @@ namespace DungeonGenerator {
                 minY = room->relPos.second;
             }
         }
+
+		std::cout<< maxX << " " << maxY << std::endl;
+		std::cout << minX << " " << minY << std::endl;
 
         int mapWidth = (maxX - minX) * CELL_SIZE;
         int mapHeight = (maxY - minY) * CELL_SIZE;
