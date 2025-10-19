@@ -1,61 +1,36 @@
 //
-// Created by aowynbb on 09/06/25.
+// Created by aowyn on 10/19/25.
 //
-#include <random>
-#include <string>
-#include <vector>
 
-#ifndef DUNGEON_MAP_H
-#define DUNGEON_MAP_H
+#ifndef RDG_UNLIMITED_DUNGEON_MAP_H
+#define RDG_UNLIMITED_DUNGEON_MAP_H
+#include "Adjacency_List.h"
 
-using std::vector;
-
-namespace DungeonGenerator {
-enum direction {north, east, south, west};
 
 class Dungeon_Map {
 private:
-    struct Room
-    {
-        bool visited, generated;
-        int position, width, height;
-        std::pair<int, int> relPos = {-1, -1};
-        bool exits[4] = {false, false, false, false};
-        std::string SVGString;
-        std::string description;
+    enum direction {NORTH, EAST, SOUTH, WEST};
+
+    struct tile {
+        int width, height, index;
+        bool exits[4] = { false, false, false, false };
+        std::pair<int, int> relative_position;
     };
 
-    vector<Room*> rooms;
-    vector<vector<Room*>> passages;
-
-    int width, height;
+    Adjacency_List<tile> map_tiles;
 
     [[nodiscard]] static std::string SVGLine(int x1, int y1, int x2, int y2);
-    [[nodiscard]] static std::string SVGRoom(Room *room, int xOffset, int yOffset);
 
-    [[nodiscard]] vector<int> UnvisitedNeighbors(int curr) const;
-    [[nodiscard]] bool spaceAvailable(const std::pair<int, int> &currPos, direction next) const;
-	void placeExits() const;
-
-    static void placeRoom(Room *currRoom, Room *nextRoom, direction next) ;
-    static std::string describeExits(const Room *room);
+    void validate_dungeon_layout();
 
 public:
     explicit Dungeon_Map(int size);
 
-    void RandomizedDFS();
+    void generate_dungeon_layout();
 
-    void generateDungeonLayout() const;
-
-    void generateMazeSVG() const;
-
-    void generateDungeonSVG() const;
-
-    void generateDungeonDescription() const;
-
-    ~Dungeon_Map();
+    void generate_maze_svg();
+    void generate_dungeon_svg();
 };
 
-} // DungeonGenerator
 
-#endif //DUNGEON_MAP_H
+#endif //RDG_UNLIMITED_DUNGEON_MAP_H
