@@ -85,100 +85,6 @@ namespace DungeonGenerator {
         }
     }
 
-    void Dungeon_Map::generateDungeonLayout() const {
-        //decision contains information about one room placement
-        struct decision
-        {
-            Room *room;
-            direction lastDir;
-            bool directionsChecked[4] = { false, false, false, false };
-        };
-
-        std::random_device rd;
-        std::mt19937 random(rd());
-
-        //a stack of all rooms that need to be generated and the room that placed them on the stack
-        std::stack<Room*> toGenerate;
-        //a stack of all successful decisions that have been made to reach the current decision
-        std::stack<decision> decisionHistory;
-
-        //set the room at vector index 0 to be at position (0,0) relative to all other rooms
-        rooms.at(0)->relPos = std::pair<int,int>(0, 0);
-		toGenerate.emplace(rooms.at(0));
-
-        //a pointer to the current room whose children are being placed
-        bool backTracking = false; //a boolean flag used to indicate weather or not we are backtracking
-
-        while (!toGenerate.empty()) { //while there are still rooms left in toGenerate
-			Room* curr_room;
-            bool directionsChecked[4] = { false, false, false, false }; //declare an array indicating which directions have been checked
-            //if the program isn't backtracking, get the next room to generate off of the top of the stack
-            if (!backTracking) {
-                curr_room = toGenerate.top();
-                toGenerate.pop();
-            }
-            //if we are backtracking, get information from the top of the decision stack to return to the last decision
-            else {
-                curr_room = decisionHistory.top().room;
-                for (int i = 0; i < 4; ++i) {
-                    directionsChecked[i] = decisionHistory.top().directionsChecked[i];
-                }
-				curr_room->exits[decisionHistory.top().lastDir] = false;
-                curr_room->generated = false;
-                decisionHistory.pop();
-            }
-
-            //if the current room has not been generated
-            if (!curr_room->generated) {
-                curr_room->generated = true;
-                //for each room connected to this one
-                for (Room* neighbour : passages.at(curr_room->position)) {
-                    //if the room has not yet been generated
-                    if (!neighbour->generated) {
-                        //find a space next to this one that is unoccupied
-                        bool placed = false;
-                        while (!placed) {
-                            //determine a random direction to check
-                            const auto next = static_cast<direction>(random() % 4);
-                            //if the direction hasn't been checked yet
-                            if (directionsChecked[next] == false) {
-                                //if there is a free space in that direction
-                                if (spaceAvailable(curr_room->relPos, next)) {
-                                    //put the room in the available space
-                                    placeRoom(curr_room, neighbour, next);
-
-                                    //create a new decision indicating the current room, directions checked, and direction selected
-                                    auto newDecision = decision(curr_room, next);
-                                    for (int i = 0; i < 4; ++i) { newDecision.directionsChecked[i] = directionsChecked[i]; }
-                                    decisionHistory.emplace(newDecision);
-
-                                    placed = true; //indicate that the room has been placed
-                                    backTracking = false; //ensure we are no longer backtracking if we where previously
-                                }
-                                //indicate that this direction has now been checked
-                                directionsChecked[next] = true;
-                            }
-
-                            //check to see if we have checked all directions
-                            bool allChecked = true;
-                            for (const bool i : directionsChecked) {
-                                if (!i) { allChecked = false; }
-                            }
-
-                            //if we have checked all directions and the room has not been placed begin backtracking
-                            if (allChecked && !placed) {
-                                curr_room->generated = false;
-                                backTracking = true;
-                                break;
-                            }
-                        }
-                        toGenerate.push(neighbour);
-                    }
-                }
-            }
-        }
-    }
-
     vector<int> Dungeon_Map::UnvisitedNeighbors(const int curr) const
     {
         vector<int> unvisitedNeighbors; // a list of neighboring cells that have not been visited by RandomizedDFS
@@ -346,54 +252,6 @@ namespace DungeonGenerator {
         return roomSVG;
     }
 
-    bool Dungeon_Map::spaceAvailable(const std::pair<int, int> &currPos, const direction next) const {
-        auto proposedSpace = currPos;
-        switch (next) {
-            case north:
-                proposedSpace.second +=1;
-                break;
-            case east:
-                proposedSpace.first +=1;
-                break;
-            case south:
-                proposedSpace.second -=1;
-                break;
-            case west:
-                proposedSpace.first -=1;
-                break;
-            default:
-                std::cerr << "Error in Dungeon_Map::spaceAvailable(): Invalid direction" << std::endl;
-                exit(1);
-        }
-
-        for (const Room* room : rooms) {
-            if (room->relPos == proposedSpace){
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void Dungeon_Map::placeRoom(Room *currRoom, Room *nextRoom, const direction next) {
-        switch (next) {
-            case north:
-                nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second + 1};
-                break;
-            case east:
-                nextRoom->relPos = {currRoom->relPos.first + 1, currRoom->relPos.second};
-                break;
-            case south:
-                nextRoom->relPos = {currRoom->relPos.first, currRoom->relPos.second - 1};
-                break;
-            case west:
-                nextRoom->relPos = {currRoom->relPos.first - 1, currRoom->relPos.second};
-                break;
-            default:
-                std::cerr << "Error in Dungeon_Map::placeRoom(): Invalid direction" << std::endl;
-                exit(1);
-        }
-    }
-
     std::string Dungeon_Map::describeExits(const Room *room) {
         bool first = true;
         std::string doorDescriptions;
@@ -435,8 +293,12 @@ namespace DungeonGenerator {
 	}
 
     void Dungeon_Map::generateDungeonSVG() const {
-        generateDungeonLayout();
+        for(Room* room : rooms) {
+            room->relPos = {room->position % width, room->position / width};
+        }
+
 		placeExits();
+
         int minX = 0, minY = 0, maxX = 0, maxY = 0;
         for (Room* room : rooms) {
             if (room->relPos.first > maxX) {
