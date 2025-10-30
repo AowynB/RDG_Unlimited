@@ -7,4 +7,6 @@ add_executable(RDG_Unlimited main.cpp
         Adjacency_List.h
         Dungeon_Map.cpp
         Dungeon_Map.h
+        SVG.cpp
+        SVG.h
 )

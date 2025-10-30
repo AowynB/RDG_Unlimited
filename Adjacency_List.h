@@ -4,8 +4,6 @@
 
 #ifndef RDG_UNLIMITED_ADJACENCY_LIST_H
 #define RDG_UNLIMITED_ADJACENCY_LIST_H
-#include <random>
-#include <stack>
 #include <stdexcept>
 #include <vector>
 
@@ -24,39 +22,12 @@
 template<typename T>
 class Adjacency_List {
 private:
-
     std::vector<T> vertices;
     std::vector<std::vector<int>> edges;
 
     std::vector<bool> visited;
     int size = 0;
 
-    /**
-     * get_unvisited_neighbors is a helper function of randomized_depth_first_search which treats the graph as a grid
-     * and returns a vector of all neighbors of the vertex located at index curr which have not yet been visited.
-     *
-     * @param curr the index whose neighbors are to be checked
-     * @return a vector of neighbors of curr that have not yet been visited by randomized_depth_first_search
-     */
-    [[nodiscard]] std::vector<int> get_unvisited_neighbors(const int curr) const {
-        const int width = floor(sqrt(size));
-
-        std::vector<int> unvisitedNeighbors;
-        if ((curr - width) >= 0 && !visited[curr - width]){
-            unvisitedNeighbors.emplace_back(curr - width);
-        }
-        if ((curr + width) < size && !visited[curr + width]){
-            unvisitedNeighbors.emplace_back(curr + width);
-        }
-        if ((curr % width) > 0 && !visited[curr - 1]){
-            unvisitedNeighbors.emplace_back(curr - 1);
-        }
-        if ((curr % width) < (width - 1) && curr != size - 1 && !visited[curr + 1]) {
-            unvisitedNeighbors.emplace_back(curr + 1);
-        }
-
-        return unvisitedNeighbors;
-    }
 
     [[nodiscard]] bool validate_index(const int index) const {
         if (index >= size || index < 0) {
@@ -172,35 +143,6 @@ public:
     void remove_edge(const int a, const int b) {
         std::erase(edges[a], b);
         std::erase(edges[b], a);
-    }
-
-    /* RANDOMIZATION */
-    /**
-     * Performs a randomized version of the depth first search algorithm on the adjacency list, this gives turns the list
-     * into a maze that with size cells.
-     * @param random_number_generator a random number generator for performing randomized depth first search
-     */
-    void randomized_depth_first_search(std::mt19937 &random_number_generator) {
-        std::stack<int> unvisited;
-
-        unvisited.push(random_number_generator() % vertices.size());
-        visited[unvisited.top()] = true;
-
-        while (!unvisited.empty()) {
-            const int current = unvisited.top();
-            unvisited.pop();
-
-            if (auto unvisitedNeighbors = get_unvisited_neighbors(current); !unvisitedNeighbors.empty()) {
-                unvisited.push(current);
-                int next = unvisitedNeighbors.at(random_number_generator() % unvisitedNeighbors.size());
-
-                edges[current].push_back(next);
-                edges[next].push_back(current);
-
-                visited[next] = true;
-                unvisited.push(next);
-            }
-        }
     }
 };
 

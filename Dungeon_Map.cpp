@@ -7,25 +7,14 @@
 #include <fstream>
 #include <iostream>
 #include <list>
-#include <queue>
 #include <regex>
 #include "Adjacency_List.h"
+#include "SVG.h"
 
-#define SVG_HEAD R"(<svg width="X" height="Y" xmlns="http://www.w3.org/2000/svg">)"
-#define SVG_LINE R"(<line x1="X1" y1="Y1" x2="X2" y2="Y2" style="stroke:white;stroke-width:2" />)"
-#define SVG_RECT R"(<rect width="W" height="H" x="X" y="Y" style="stroke:white;stroke-width:2"/>)"
-#define SVG_FOOT R"(</svg>)"
 
 constexpr int TILE_SIZE = 50;
 constexpr int PASSAGE_SIZE = 10;
 constexpr int ROOM_SIZES[4] = {10, 30, 40, 50};
-
-std::string Dungeon_Map::SVGLine(const int x1, const int y1, const int x2, const int y2) {
-    std::string lineSVG = regex_replace(SVG_LINE, std::regex("X1"), std::to_string(x1));
-    lineSVG = regex_replace(lineSVG, std::regex("Y1"), std::to_string(y1));
-    lineSVG = regex_replace(lineSVG, std::regex("X2"), std::to_string(x2));
-    return regex_replace(lineSVG, std::regex("Y2"), std::to_string(y2));
-}
 
 void Dungeon_Map::validate_dungeon_layout() {
 
@@ -150,43 +139,6 @@ void Dungeon_Map::placeExits(){
     }
 }
 
-void Dungeon_Map::generate_maze_svg()
-{
-    auto mapFile = std::ofstream("Dungeon_Maze.svg"); //open the file to write to
-    int width = floor(sqrt(rooms.get_size()));
-    int height = static_cast<int>(ceil(sqrt(rooms.get_size())) + 1);
-
-    //Write the SVG header to the file
-    mapFile << std::regex_replace(
-        std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(width * 10)),
-                            std::regex("Y"), std::to_string(height * 10)) << std::endl;
-
-    //define x and y values to track location on the resulting image
-    int x = 0, y = 0;
-
-    //for each room
-    for (int i = 0; i < rooms.get_size(); i++)
-    {
-        tile curr = rooms.get_vertex(i);
-        bool up = false, right = false, down = false, left = false;
-        for (int neighbour : rooms.get_edges(curr.index)){
-            if (neighbour == curr.index + width) {up = true;}
-            else if (neighbour == curr.index + 1) {right = true;}
-            else if (neighbour == curr.index - width) {down = true;}
-            else if (neighbour == curr.index - 1) {left = true;}
-        }
-        if (!up){ mapFile << SVGLine(x, y + 10, x + 10, y + 10) << std::endl; }
-        if (!right){ mapFile << SVGLine(x + 10, y, x + 10, y + 10) << std::endl; }
-        if (!down){ mapFile << SVGLine(x, y, x + 10, y) << std::endl; }
-        if (!left){ mapFile << SVGLine(x, y, x, y + 10) << std::endl; }
-
-        if (curr.index % width == width - 1) {y += 10; x = 0;}
-        else {x += 10;}
-    }
-
-    mapFile << SVG_FOOT;
-}
-
 void Dungeon_Map::generate_dungeon_svg() {
     int minX = 0, minY = 0, maxX = 0, maxY = 0;
     for (int i = 0; i < rooms.get_size(); i++) {
@@ -211,8 +163,7 @@ void Dungeon_Map::generate_dungeon_svg() {
     int mapHeight = (maxY - minY) * TILE_SIZE;
 
     std::ofstream mapFile = std::ofstream("Dungeon_Map.svg");
-    std::string header = std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(mapWidth + TILE_SIZE));
-    mapFile << std::regex_replace(header, std::regex("Y"), std::to_string(mapHeight + TILE_SIZE)) << std::endl;
+    mapFile << SVGHead(mapWidth + TILE_SIZE, mapHeight + TILE_SIZE);
 
     std::random_device  rd;
     std::mt19937 gen(rd());
@@ -222,7 +173,7 @@ void Dungeon_Map::generate_dungeon_svg() {
         mapFile << SVG_tile(i, minX, minY, gen) << std::endl;
     }
 
-    mapFile << SVG_FOOT;
+    mapFile << SVGEnd();
 }
 
 std::string Dungeon_Map::SVG_tile(int room_index, const int x_offset, const int y_offset, std::mt19937 random_number_generator) {
@@ -305,11 +256,4 @@ std::string Dungeon_Map::SVG_tile(int room_index, const int x_offset, const int 
     }
 
     return roomSVG;
-}
-
-std::string Dungeon_Map::SVG_corner(const std::pair<int, int> &start, const std::pair<int, int> &corner, const std::pair<int, int> &end) {
-    std::string result;
-    result += SVGLine(start.first, start.second, corner.first, corner.second);
-    result += SVGLine(corner.first, corner.second, end.first, end.second);
-    return result;
 }

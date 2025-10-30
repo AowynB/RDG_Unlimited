@@ -11,8 +11,7 @@ int main()
 {
     std::random_device random;
     std::mt19937 generator(random());
-    Dungeon_Map map(2000);
+    Dungeon_Map map(100);
     map.generate_dungeon_layout(generator);
-    map.generate_maze_svg();
     map.generate_dungeon_svg();
 }

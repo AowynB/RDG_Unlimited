@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 
+
 namespace Table {
 
 class Random_Table {
