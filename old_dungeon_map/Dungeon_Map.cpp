@@ -21,7 +21,7 @@
 
 using std::stack, std::string, std::ofstream, std::ifstream, std::regex, std::regex_replace;
 
-constexpr int CELL_SIZE = 50;
+constexpr int TILE_SIZE = 50;
 constexpr int PASSAGE_SIZE = 10;
 constexpr int ROOM_SIZES[4] = {10, 30, 40, 50};
 constexpr DungeonGenerator::direction DIRECTIONS[4] =
@@ -284,14 +284,14 @@ namespace DungeonGenerator {
 			}
         }
 
-        int minX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (room->width - PASSAGE_SIZE);
+        int minX = (TILE_SIZE / 2) - (PASSAGE_SIZE / 2) - (room->width - PASSAGE_SIZE);
         if (minX < 0) { minX = 0; };
-        int minY = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2) - (room->height - PASSAGE_SIZE);
+        int minY = (TILE_SIZE / 2) - (PASSAGE_SIZE / 2) - (room->height - PASSAGE_SIZE);
         if (minY < 0) { minY = 0; };
-        int maxX = CELL_SIZE - room->width;
-        if (maxX > (CELL_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxX = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2); };
-        int maxY = CELL_SIZE - room->height;
-        if (maxY > (CELL_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxY = (CELL_SIZE / 2) - (PASSAGE_SIZE / 2); };
+        int maxX = TILE_SIZE - room->width;
+        if (maxX > (TILE_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxX = (TILE_SIZE / 2) - (PASSAGE_SIZE / 2); };
+        int maxY = TILE_SIZE - room->height;
+        if (maxY > (TILE_SIZE / 2) - (PASSAGE_SIZE / 2)) { maxY = (TILE_SIZE / 2) - (PASSAGE_SIZE / 2); };
 
         int roomX = static_cast<int>(random() % (maxX - minX + 1)) + minX;
         roomX -= roomX % 5;
@@ -456,12 +456,12 @@ namespace DungeonGenerator {
 		std::cout<< maxX << " " << maxY << std::endl;
 		std::cout << minX << " " << minY << std::endl;
 
-        int mapWidth = (maxX - minX) * CELL_SIZE;
-        int mapHeight = (maxY - minY) * CELL_SIZE;
+        int mapWidth = (maxX - minX) * TILE_SIZE;
+        int mapHeight = (maxY - minY) * TILE_SIZE;
 
         ofstream mapFile = ofstream("Dungeon_Map.svg");
-        string header = std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(mapWidth + CELL_SIZE));
-        mapFile << std::regex_replace(header, std::regex("Y"), std::to_string(mapHeight + CELL_SIZE)) << std::endl;
+        string header = std::regex_replace(SVG_HEAD, std::regex("X"), std::to_string(mapWidth + TILE_SIZE));
+        mapFile << std::regex_replace(header, std::regex("Y"), std::to_string(mapHeight + TILE_SIZE)) << std::endl;
 
         for (Room* room : rooms) {
             mapFile << SVGRoom(room, minX, minY) << std::endl;
