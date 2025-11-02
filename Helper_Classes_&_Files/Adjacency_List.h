@@ -8,7 +8,7 @@
 #include <vector>
 
 /**
- * A bidirectional Adjacency list implementation of a graph which supports randomized depth first searching.
+ * An undirected Adjacency list implementation of a graph which supports randomized depth first searching.
  * ATTRIBUTES:
  * @var vertices, a vector of all values stored in the graph, this is changed very little
  * @var adjacency, A list containing all vertex connections. each vertex's connections are stored at the same index
