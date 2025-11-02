@@ -4,16 +4,13 @@
 
 #include <iostream>
 
-#include "Dungeon_Map.h"
+#include "Dungeon_Map/Dungeon_Map.h"
 
 int main()
 {
-    int numRooms;
-    std::cout << "Hello user, please enter the number of rooms for your dungeon: ";
-    std::cin >> numRooms;
-    DungeonGenerator::Dungeon_Map dmap(numRooms);
-    dmap.RandomizedDFS();
-    dmap.generateMazeSVG();
-    dmap.generateDungeonSVG();
-    //dmap.generateDungeonDescription();
+    std::random_device random;
+    std::mt19937 generator(random());
+    Dungeon_Map map(2000);
+    map.generate_dungeon_layout(generator);
+    map.generate_dungeon_svg(generator);
 }
